@@ -123,43 +123,45 @@ function cube(s, rx, ry){
     )
 }
 
+var scene = [
+  cube(1,Math.random(),Math.random())
+]
 
-var c = renderer.canvas
-
-c.addEventListener("touchstart", function(e){
-  e.preventDefault()
-}, false)
-
-c.addEventListener("touchmove", function(e){
-  e.preventDefault()
-
+function r(t) {
+  requestAnimationFrame(r)
   renderer.clear()
+  scene.forEach(renderer.draw)
+}
+requestAnimationFrame(r)
 
-  var r = 1
-  var touches = e.touches
-  for (var i = 0; i < touches.length; i++) {
-    renderer.draw(cube(
-      r,
-      touches[i].pageX/100,
-      touches[i].pageY/100
-    ))
 
-  }
+
+document.addEventListener("touchstart", function(e){
+  e.preventDefault()
+}, false)
+
+document.addEventListener("touchmove", function(e){
+  e.preventDefault()
+
+  scene = [].map.call(e.touches || [], function(touch){
+    return cube(
+      1,
+      touch.pageX/100,
+      touch.pageY/100
+    )
+  })
 
 }, false)
 
-
-var cubes = []
 
 document.addEventListener('mousemove', function(e){
 
-  renderer.clear()
-  renderer.draw(cube(1,e.screenX/100, e.screenY/100))
+  scene = [
+    cube(1,e.screenX/100, e.screenY/100)
+  ]
 
 })
 
-
-renderer.draw(cube(1,Math.random(),Math.random()))
 
     </script>
   </body>
