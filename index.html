@@ -29,32 +29,32 @@ ctx.strokeStyle = 'rgba(0,0,0,0.9)'
 
 var clear = ctx.clearRect.bind(ctx, -w/2, -h/2, w, h)
 
-var I = $M([
-  [s/2,0,0],
-  [0,s/2,0],
-  [0,0,s/2]
+var base = $M([
+  [s/4,0,0],
+  [0,s/4,0],
+  [0,0,s/4]
 ])
-
 
 var _cube = [
 
-  [-0.5,-0.5,-0.5], [ 0.5,-0.5,-0.5],
-  [-0.5,-0.5,-0.5], [-0.5, 0.5,-0.5],
-  [-0.5,-0.5,-0.5], [-0.5,-0.5, 0.5],
+  [-1,-1,-1], [ 1,-1,-1],
+  [-1,-1,-1], [-1, 1,-1],
+  [-1,-1,-1], [-1,-1, 1],
 
-  [-0.5, 0.5, 0.5], [ 0.5, 0.5, 0.5],
-  [-0.5, 0.5, 0.5], [-0.5,-0.5, 0.5],
-  [-0.5, 0.5, 0.5], [-0.5, 0.5,-0.5],
+  [-1, 1, 1], [ 1, 1, 1],
+  [-1, 1, 1], [-1,-1, 1],
+  [-1, 1, 1], [-1, 1,-1],
 
-  [ 0.5, 0.5,-0.5], [-0.5, 0.5,-0.5],
-  [ 0.5, 0.5,-0.5], [ 0.5,-0.5,-0.5],
-  [ 0.5, 0.5,-0.5], [ 0.5, 0.5, 0.5],
+  [ 1, 1,-1], [-1, 1,-1],
+  [ 1, 1,-1], [ 1,-1,-1],
+  [ 1, 1,-1], [ 1, 1, 1],
 
-  [ 0.5,-0.5, 0.5], [-0.5,-0.5, 0.5],
-  [ 0.5,-0.5, 0.5], [ 0.5, 0.5, 0.5],
-  [ 0.5,-0.5, 0.5], [ 0.5,-0.5,-0.5]
+  [ 1,-1, 1], [-1,-1, 1],
+  [ 1,-1, 1], [ 1, 1, 1],
+  [ 1,-1, 1], [ 1,-1,-1]
 
-].map($V)
+]
+.map($V)
 
 
 function transform(base, scale, rx, ry) {
@@ -84,8 +84,18 @@ function draw(vertices){
   ctx.stroke()
 }
 
-function drawCube(){
-
+function drawCube(s, rx, ry){
+  draw(
+    _cube
+      .map(
+        transform(
+          base,
+          s,
+          rx,
+          ry
+        )
+      )
+  )
 }
 
 
@@ -101,15 +111,10 @@ c.addEventListener("touchmove", function(e){
   var touches = e.touches
   for (var i = 0; i < touches.length; i++) {
 
-    draw(
-      _cube
-        .map(
-          transform(I,
-            r,
-            touches[i].pageX/100,
-            touches[i].pageY/100
-          )
-        )
+    drawCube(
+      r,
+      touches[i].pageX/100,
+      touches[i].pageY/100
     )
 
   }
@@ -121,15 +126,10 @@ c.addEventListener("touchmove", function(e){
 document.addEventListener('mousemove', function(e){
   clear()
 
-  draw(
-    _cube
-      .map(
-        transform(I,
-          1,
-          e.screenX/100,
-          e.screenY/100
-        )
-      )
+  drawCube(
+    1,
+    e.screenX/100,
+    e.screenY/100
   )
 
 })
