@@ -11,29 +11,59 @@
     <script type="text/javascript" src="sylvester.js"></script>
     <script type="text/javascript">
 
-var w = window.innerWidth,
-    h = window.innerHeight,
-    s = Math.min(w,h)
 
-var c = document.createElement('canvas')
-c.width = w
-c.height = h
+function createRenderer(){
 
-document.body.appendChild(c)
+  var w = window.innerWidth,
+      h = window.innerHeight,
+      s = Math.min(w,h)
 
-var ctx = c.getContext('2d')
-ctx.translate(w/2,h/2)
-ctx.lineCap = 'round'
-ctx.lineWidth = s/60
-ctx.strokeStyle = 'rgba(0,0,0,0.9)'
+  var c = document.createElement('canvas')
 
-var clear = ctx.clearRect.bind(ctx, -w/2, -h/2, w, h)
+  c.width = w
+  c.height = h
+  document.body.appendChild(c)
 
-var base = $M([
-  [s/4,0,0],
-  [0,s/4,0],
-  [0,0,s/4]
-])
+  var ctx = c.getContext('2d')
+  ctx.translate(w/2,h/2)
+  ctx.lineCap = 'round'
+  ctx.lineWidth = s/60
+  ctx.strokeStyle = 'rgba(0,0,0,0.9)'
+
+  var clear = ctx.clearRect.bind(ctx, -w/2, -h/2, w, h)
+
+  var base = $M([
+    [s/4,0,0],
+    [0,s/4,0],
+    [0,0,s/4]
+  ])
+
+  return {
+    draw: function (vertices) {
+
+      var vs = vertices.map(function(v){
+        return base.multiply(v)
+      })
+
+      ctx.beginPath()
+
+      for (var i = 0; i < vs.length; i+=2) {
+        var a = vs[i]
+        var b = vs[i+1]
+
+        ctx.moveTo(a.e(1), a.e(2))
+        ctx.lineTo(b.e(1), b.e(2))
+
+      }
+      ctx.stroke()
+    },
+    clear: ctx.clearRect.bind(ctx, -w/2, -h/2, w, h),
+    canvas: c
+  }
+}
+
+
+var renderer = createRenderer()
 
 var _cube = [
 
@@ -57,7 +87,7 @@ var _cube = [
 .map($V)
 
 
-function transform(base, scale, rx, ry) {
+function transform(scale, rx, ry) {
   var m = $M([
       [scale,0,0],
       [0,scale,0],
@@ -65,38 +95,22 @@ function transform(base, scale, rx, ry) {
     ])
     .multiply(Matrix.RotationX(ry))
     .multiply(Matrix.RotationY(rx))
-    .multiply(base)
   return m.multiply.bind(m)
 }
 
-function draw(vertices){
-  ctx.beginPath()
-
-  for (var i = 0; i < vertices.length; i+=2) {
-    var a = vertices[i]
-    var b = vertices[i+1]
-
-    ctx.moveTo(a.e(1), a.e(2))
-    ctx.lineTo(b.e(1), b.e(2))
-
-  }
-  ctx.stroke()
-}
-
-function drawCube(s, rx, ry){
-  draw(
-    _cube
-      .map(
-        transform(
-          base,
-          s,
-          rx,
-          ry
-        )
+function cube(s, rx, ry){
+  return _cube
+    .map(
+      transform(
+        s,
+        rx,
+        ry
       )
-  )
+    )
 }
 
+
+var c = renderer.canvas
 
 c.addEventListener("touchstart", function(e){
   e.preventDefault()
@@ -104,35 +118,34 @@ c.addEventListener("touchstart", function(e){
 c.addEventListener("touchmove", function(e){
   e.preventDefault()
 
-  clear()
+  renderer.clear()
 
   var r = 1
   var touches = e.touches
   for (var i = 0; i < touches.length; i++) {
-
-    drawCube(
+    renderer.draw(cube(
       r,
       touches[i].pageX/100,
       touches[i].pageY/100
-    )
+    ))
 
   }
 
 }, false);
 
 
+var cubes = []
 
 document.addEventListener('mousemove', function(e){
-  clear()
 
-  drawCube(
-    1,
-    e.screenX/100,
-    e.screenY/100
-  )
+  cubes[e.buttons] = [e.screenX/100, e.screenY/100]
+
+  renderer.clear()
+  cubes.forEach(function(coords, i) {
+    renderer.draw(cube(1,coords[0],coords[1]))
+  })
 
 })
-
 
 
     </script>
