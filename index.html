@@ -27,7 +27,7 @@ function createRenderer(){
   var ctx = c.getContext('2d')
   ctx.translate(w/2,h/2)
   ctx.lineCap = 'round'
-  ctx.lineWidth = s/60
+  ctx.lineWidth = s/40
   ctx.strokeStyle = 'rgba(0,0,0,0.9)'
 
   var clear = ctx.clearRect.bind(ctx, -w/2, -h/2, w, h)
@@ -41,6 +41,7 @@ function createRenderer(){
   return {
     draw: function (vertices) {
 
+      // map them into the world view (basically, scale them)
       var vs = vertices.map(function(v){
         return base.multiply(v)
       })
@@ -62,10 +63,34 @@ function createRenderer(){
   }
 }
 
+// compose a bunch of matrices and return a
+// function for mapping vertices
+function _x(matrices) {
+
+  var m = matrices.reduce(function(memo, m){
+    return memo.multiply(m)
+  }, Matrix.I(3))
+
+  return m.multiply.bind(m)
+
+}
+
+// matrix generators
+function scale(s) {
+  return $M([
+    [s,0,0],
+    [0,s,0],
+    [0,0,s]
+  ])
+}
+var rotateX = Matrix.RotationX
+var rotateY = Matrix.RotationY
+
+
 
 var renderer = createRenderer()
 
-var _cube = [
+var cubeData = [
 
   [-1,-1,-1], [ 1,-1,-1],
   [-1,-1,-1], [-1, 1,-1],
@@ -86,26 +111,15 @@ var _cube = [
 ]
 .map($V)
 
-
-function transform(scale, rx, ry) {
-  var m = $M([
-      [scale,0,0],
-      [0,scale,0],
-      [0,0,scale]
-    ])
-    .multiply(Matrix.RotationX(ry))
-    .multiply(Matrix.RotationY(rx))
-  return m.multiply.bind(m)
-}
-
+// generate a cube with a size and rotation
 function cube(s, rx, ry){
-  return _cube
+  return cubeData
     .map(
-      transform(
-        s,
-        rx,
-        ry
-      )
+      _x([
+        scale(s),
+        rotateX(ry),
+        rotateY(rx)
+      ])
     )
 }
 
@@ -114,7 +128,8 @@ var c = renderer.canvas
 
 c.addEventListener("touchstart", function(e){
   e.preventDefault()
-}, false);
+}, false)
+
 c.addEventListener("touchmove", function(e){
   e.preventDefault()
 
@@ -131,22 +146,20 @@ c.addEventListener("touchmove", function(e){
 
   }
 
-}, false);
+}, false)
 
 
 var cubes = []
 
 document.addEventListener('mousemove', function(e){
 
-  cubes[e.buttons] = [e.screenX/100, e.screenY/100]
-
   renderer.clear()
-  cubes.forEach(function(coords, i) {
-    renderer.draw(cube(1,coords[0],coords[1]))
-  })
+  renderer.draw(cube(1,e.screenX/100, e.screenY/100))
 
 })
 
+
+renderer.draw(cube(1,Math.random(),Math.random()))
 
     </script>
   </body>
