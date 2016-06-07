@@ -63,12 +63,11 @@ function transform(base, scale, rx, ry) {
       [0,scale,0],
       [0,0,scale]
     ])
-    .multiply(base)
     .multiply(Matrix.RotationX(ry))
     .multiply(Matrix.RotationY(rx))
+    .multiply(base)
   return m.multiply.bind(m)
 }
-
 
 function draw(vertices){
   ctx.beginPath()
