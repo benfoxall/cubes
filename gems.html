@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>cubes</title>
+    <style media="screen">
+      body {margin:0}
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript" src="sylvester.js"></script>
+    <script type="text/javascript" src="fulltilt.js"></script>
+    <script type="text/javascript">
+
+
+function createRenderer(){
+
+  var w = window.innerWidth,
+      h = window.innerHeight,
+      s = Math.min(w,h)
+
+  var c = document.createElement('canvas')
+
+  c.width = w
+  c.height = h
+  document.body.appendChild(c)
+
+  var ctx = c.getContext('2d')
+  ctx.translate(w/2,h/2)
+  ctx.lineCap = 'round'
+  ctx.lineWidth = s/90
+  ctx.strokeStyle = 'rgba(0,0,0,0.9)'
+
+  var clear = ctx.clearRect.bind(ctx, -w/2, -h/2, w, h)
+
+  var base = $M([
+    [s/4,0,0],
+    [0,s/4,0],
+    [0,0,s/4]
+  ])
+
+  var orientation = Matrix.I(3)
+
+  return {
+    draw: function (vertices) {
+
+      var world = base.multiply(orientation)
+
+      // map them into the world view (basically, scale them)
+      var vs = vertices.map(function(v){
+        return world.multiply(v)
+      })
+
+      ctx.beginPath()
+
+      for (var i = 0; i < vs.length; i+=2) {
+        var a = vs[i]
+        var b = vs[i+1]
+
+        ctx.moveTo(a.e(1), a.e(2))
+        ctx.lineTo(b.e(1), b.e(2))
+
+      }
+      ctx.stroke()
+    },
+    clear: ctx.clearRect.bind(ctx, -w/2, -h/2, w, h),
+    canvas: c,
+    tilt: Matrix.I(3),
+    setOrientation: function(m){
+      orientation = m;//.inverse()
+    }
+  }
+}
+
+// compose a bunch of matrices and return a
+// function for mapping vertices
+function _x(matrices) {
+
+  var m = matrices.reduce(function(memo, m){
+    return memo.multiply(m)
+  }, Matrix.I(3))
+
+  return m.multiply.bind(m)
+
+}
+
+// matrix generators
+function scale(s) {
+  return $M([
+    [s,0,0],
+    [0,s,0],
+    [0,0,s]
+  ])
+}
+var rotateX = Matrix.RotationX
+var rotateY = Matrix.RotationY
+
+
+
+
+var renderer = createRenderer()
+
+var cubeData = [
+
+  [-1,-1,-1], [ 1,-1,-1],
+  [-1,-1,-1], [-1, 1,-1],
+  [-1,-1,-1], [-1,-1, 1],
+
+  [-1, 1, 1], [ 1, 1, 1],
+  [-1, 1, 1], [-1,-1, 1],
+  [-1, 1, 1], [-1, 1,-1],
+
+  [ 1, 1,-1], [-1, 1,-1],
+  [ 1, 1,-1], [ 1,-1,-1],
+  [ 1, 1,-1], [ 1, 1, 1],
+
+  [ 1,-1, 1], [-1,-1, 1],
+  [ 1,-1, 1], [ 1, 1, 1],
+  [ 1,-1, 1], [ 1,-1,-1]
+
+]
+.map($V)
+
+// generate a cube with a size and rotation
+function cube(s, rx, ry){
+  return cubeData
+    .map(
+      _x([
+        scale(s),
+        rotateX(ry),
+        rotateY(rx)
+      ])
+    )
+}
+
+var scene = [
+  cube(1,Math.random(),Math.random())
+]
+
+var ___x = Math.random()/10, ___y = Math.random()/10
+var __x = 0, __y = 0
+function r(t) {
+  ___x = (___x + ((Math.random()-.5)*0.01) ) * .99
+  ___y = (___y + ((Math.random()-.5)*0.01) ) * .99
+  __x += ___x
+  __y += ___y
+
+  __y = 1
+  var scene = [
+    // cube(1,r1,r2),
+    ruby(1,__x,__y)
+    // ruby(1,0,0)
+  ]
+  requestAnimationFrame(r)
+  renderer.clear()
+  scene.forEach(renderer.draw)
+}
+requestAnimationFrame(r)
+
+
+
+function ring(sides, a, b) {
+  var r = Matrix.RotationZ((Math.PI*2)/sides)
+
+
+  // console.log(an.inspect())
+
+
+  var vertices = []
+  for (var i = 0; i < sides; i++) {
+
+    var an = r.x(a)
+    var bn = r.x(b)
+
+    var va = [an,b,a]
+    var vb = [an,b,bn]
+
+    vertices.push(va)
+    vertices.push(vb)
+
+    a = an
+    b = bn
+
+      // console.log(an.inspect())
+
+  }
+
+  return vertices
+
+}
+
+// var rubyData = ring(4, $V([0,1,0]), $V([2,2,2])).reduce(vtol, [])
+
+
+function gem(sides, points) {
+  var r = Matrix.RotationZ(-(Math.PI)/sides);
+
+    // (Math.PI*2)/sides)
+
+  var vertices = []
+
+  for (var i = 0; i < points.length - 1; i++) {
+    // points[i] points[i+1]
+    var x1 = points[i][0]/2,
+        y1 = points[i][1]/2,
+        x2 = points[i+1][0]/2,
+        y2 = points[i+1][1]/2
+
+    var a = $V([0, x1, y1])
+    var b = $V([0, x2, y2])
+
+    // b = r.x(b)
+
+    if(i % 2) {
+      a = r.x(a)
+    } else {
+      b = r.x(b)
+    }
+
+    vertices = vertices.concat(
+      ring(sides, a, b)
+    )
+  }
+
+  return vertices
+}
+
+var rubyData =
+  gem(8, [
+    [0,-3],
+    [3,-3],
+    [4,-2],
+    [0,3]
+  ]
+)
+
+  .reduce(vtol, [])
+
+console.log("r", rubyData)
+
+// triangle to line
+function vtol(memo, v){
+  return memo.concat([
+    v[0],
+    v[1],
+    v[1],
+    v[2],
+    v[2],
+    v[0]
+  ])
+}
+
+// scene.push(rubyData.reduce(vtol, []))
+
+var r1 = Math.random(), r2 = Math.random()
+var scene = [
+  // cube(1,r1,r2),
+  ruby(1,r1,r2)
+]
+
+
+// generate a cube with a size and rotation
+function ruby(s, rx, ry){
+  return rubyData
+    .map(
+      _x([
+        scale(s),
+        rotateX(ry),
+        rotateY(rx)
+      ])
+    )
+}
+
+
+
+
+document.addEventListener("touchstart", function(e){
+  e.preventDefault()
+}, false)
+
+document.addEventListener("touchmove", function(e){
+  e.preventDefault()
+
+  scene = [].map.call(e.touches || [], function(touch){
+    return cube(
+      1,
+      touch.pageX/100,
+      touch.pageY/100
+    )
+  })
+
+}, false)
+
+
+document.addEventListener('mousemove', function(e){
+
+  scene = [
+    // cube(1,e.screenX/100, e.screenY/100),
+    ruby(1,e.screenX/100, e.screenY/100)
+  ]
+
+})
+
+
+    </script>
+  </body>
+</html>
