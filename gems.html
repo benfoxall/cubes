@@ -63,6 +63,48 @@ function createRenderer(){
       }
       ctx.stroke()
     },
+    drawFace: function (face) {
+
+      var world = base.multiply(orientation)
+
+      var ut = world.multiply(face.u)
+      var a = ut.angleFrom($V([0,0,1])) / (Math.PI * 2)
+
+      a = 0.5 + (a * 0.5)
+
+      // if(ut.e(3) > 0) return
+      ctx.globalCompositeOperation = 'lighter'
+
+      // ctx.fillStyle = "rgba(0,0,0,"+ a +")"
+      ctx.fillStyle = "hsla(0,90%,"+ a*100 +"%, 1)"
+
+
+
+      // map them into the world view (basically, scale them)
+      // var vs = vertices.map(function(v){
+      //   return world.multiply(v)
+      // })
+      //
+      var a = world.multiply(face.a)
+      var b = world.multiply(face.b)
+      var c = world.multiply(face.c)
+
+      ctx.beginPath()
+
+      ctx.moveTo(a.e(1),a.e(2))
+      ctx.lineTo(b.e(1),b.e(2))
+      ctx.lineTo(c.e(1),c.e(2))
+
+      // for (var i = 0; i < vs.length; i+=2) {
+      //   var a = vs[i]
+      //   var b = vs[i+1]
+      //
+      //   ctx.moveTo(a.e(1), a.e(2))
+      //   ctx.lineTo(b.e(1), b.e(2))
+      //
+      // }
+      ctx.fill()
+    },
     clear: ctx.clearRect.bind(ctx, -w/2, -h/2, w, h),
     canvas: c,
     tilt: Matrix.I(3),
@@ -70,11 +112,21 @@ function createRenderer(){
       orientation = m;//.inverse()
     }
   }
+
 }
 
 // compose a bunch of matrices and return a
 // function for mapping vertices
 function _x(matrices) {
+
+  var m = matrices.reduce(function(memo, m){
+    return memo.multiply(m)
+  }, Matrix.I(3))
+
+  return m.multiply.bind(m)
+
+}
+function _x_(matrices) {
 
   var m = matrices.reduce(function(memo, m){
     return memo.multiply(m)
@@ -136,6 +188,7 @@ function cube(s, rx, ry){
 var scene = [
   cube(1,Math.random(),Math.random())
 ]
+var faces = []
 
 var ___x = Math.random()/10, ___y = Math.random()/10
 var __x = 0, __y = 0
@@ -145,15 +198,25 @@ function r(t) {
   __x += ___x
   __y += ___y
 
+  __y += 0.2
+
   __y = 1
   var scene = [
     // cube(1,r1,r2),
-    ruby(1,__x,__y)
+    // ruby(1,__x,__y)
     // ruby(1,0,0)
   ]
+
+  renderer.setOrientation(
+    scale(1)
+      .multiply(rotateX(__x/2))
+      .multiply(rotateY(__y/3))
+  )
+
   requestAnimationFrame(r)
   renderer.clear()
   scene.forEach(renderer.draw)
+  faces.forEach(renderer.drawFace)
 }
 requestAnimationFrame(r)
 
@@ -178,8 +241,15 @@ function ring(sides, a, b) {
     vertices.push(va)
     vertices.push(vb)
 
+    // var n = a.cross(b)
+
+    // vertices.push(n)
+    // console.log(n)
+
     a = an
     b = bn
+
+
 
       // console.log(an.inspect())
 
@@ -232,21 +302,83 @@ var rubyData =
     [4,-2],
     [0,3]
   ]
-)
-
+  )
   .reduce(vtol, [])
 
-console.log("r", rubyData)
+
+var rubyFaces =
+  gem(8, [
+    [0,-3],
+    [3,-3],
+    [4,-2],
+    [0,3]
+  ]
+  )
+  .map(vtoface)
+
+faces = rubyFaces
+
+function vtoface(v){
+  return new Face(v[0],v[1],v[2])
+  // return {
+  //   a: v[0],
+  //   b: v[1],
+  //   c: v[2],
+  //
+  //   // HACK
+  //   u: v[0].add(v[1]).add(v[2]).toUnitVector()
+  // }
+}
+
+function Face(a,b,c) {
+  this.a = a
+  this.b = b
+  this.c = c
+  // HACK
+  this.u = a.add(b).add(b).toUnitVector()
+}
+
+Face.prototype.draw = function(m, ctx) {
+  ctx.fillStyle = 'red'
+  ctx.beginPath()
+  ctx.moveTo()
+}
+
+
+
+
+
+// console.log("r", rubyData)
 
 // triangle to line
 function vtol(memo, v){
+
+  var avg = $V([
+    (v[0].e(1) + v[1].e(1) + v[2].e(1)) / 3,
+    (v[0].e(2) + v[1].e(2) + v[2].e(2)) / 3,
+    (v[0].e(3) + v[1].e(3) + v[2].e(3)) / 3
+  ])
+
+  var avgo =  $V([
+    (v[0].e(1) + v[1].e(1) + v[2].e(1)) / 2,
+    (v[0].e(2) + v[1].e(2) + v[2].e(2)) / 2,
+    (v[0].e(3) + v[1].e(3) + v[2].e(3)) / 2
+  ])
+
   return memo.concat([
     v[0],
     v[1],
     v[1],
     v[2],
     v[2],
-    v[0]
+    v[0],
+
+    // v[0].add(v[1]).add(v[2]),
+    avg,
+    avgo,
+
+
+    // avg.add(v[0].cross(v[1]))
   ])
 }
 
