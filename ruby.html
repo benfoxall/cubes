@@ -87,16 +87,12 @@
 
     var ruby = gem(8,
       [
-        [0,-3],
-        [3,-3],
-        [4,-2],
-        [0,3]
+        [0,-2.5],
+        [2.6,-2.5],
+        [3.9,-1.1],
+        [0,2.8]
       ]
     )
-
-    var faces = ruby
-    console.log(ruby)
-
 
     // set up canvas/context/transform
 
@@ -125,6 +121,9 @@
     .multiply(
       Matrix.RotationX(-.2)
     )
+    // .multiply(
+    //   // Matrix.RotationY(.045)
+    // )
 
     var world = base;
 
@@ -136,7 +135,7 @@
 
     function draw(hue){
 
-      faces.forEach(function(face){
+      ruby.forEach(function(face){
 
         var a = world.multiply(face.a)
         var b = world.multiply(face.b)
@@ -163,17 +162,12 @@
     function render(t) {
         requestAnimationFrame(render)
 
-        // world = base.multiply(
-        //   Matrix.RotationX(t/1000)
-        // )
-
         world = base.multiply(
           Matrix.RotationZ(t/9000)
         )
 
         clear()
-        draw(0) //Math.floor((t/10) % 360))
-        // console.log(Math.floor((t/5) % 360))
+        draw(0)
 
     }
 
