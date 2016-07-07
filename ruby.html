@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>BRB</title>
+    <style media="screen">
+      body{margin:0}
+    </style>
+  </head>
+  <body>
+
+    <script type="text/javascript" src="sylvester.js"></script>
+    <script type="text/javascript">
+
+
+    // generate gem faces
+
+    function face(a,b,c){
+      return {
+        a:a,
+        b:b,
+        c:c,
+        // hack
+        u:a.add(b).add(c).toUnitVector()
+      }
+    }
+
+    function ring(sides, a, b) {
+      var r = Matrix.RotationZ((Math.PI*2)/sides)
+
+      var faces = []
+
+      for (var i = 0; i < sides; i++) {
+
+        var an = r.x(a)
+        var bn = r.x(b)
+
+        var va = [an,b,a]
+        var vb = [an,b,bn]
+
+        faces.push(face(an,b,a))
+        faces.push(face(an,b,bn))
+
+        // faces.push(face(an,b,a))
+        // faces.push(face(an,b,bn))
+
+        a = an
+        b = bn
+
+
+      }
+
+      return faces
+
+    }
+
+
+    function gem(sides, points) {
+      var r = Matrix.RotationZ(-(Math.PI)/sides);
+
+      var faces = []
+
+      for (var i = 0; i < points.length - 1; i++) {
+        // points[i] points[i+1]
+        var x1 = points[i][0]/2,
+            y1 = points[i][1]/2,
+            x2 = points[i+1][0]/2,
+            y2 = points[i+1][1]/2
+
+        var a = $V([0, x1, y1])
+        var b = $V([0, x2, y2])
+
+        if(i % 2) {
+          a = r.x(a)
+        } else {
+          b = r.x(b)
+        }
+
+        faces = faces.concat(
+          ring(sides, a, b)
+        )
+      }
+
+      return faces
+    }
+
+
+    var ruby = gem(8,
+      [
+        [0,-3],
+        [3,-3],
+        [4,-2],
+        [0,3]
+      ]
+    )
+
+    var faces = ruby
+    console.log(ruby)
+
+
+    // set up canvas/context/transform
+
+    var w = window.innerWidth
+    var h = window.innerHeight
+    var s = Math.min(w,h)
+
+    var canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    document.body.appendChild(canvas)
+
+    var ctx = canvas.getContext('2d')
+    ctx.translate(w/2,h/2)
+    var clear = ctx.clearRect.bind(ctx, -w/2, -h/2, w, h)
+
+
+    var base = $M([
+      [s/4,0,0],
+      [0,s/4,0],
+      [0,0,s/4]
+    ])
+    .multiply(
+      Matrix.RotationX(-Math.PI/2)
+    )
+    .multiply(
+      Matrix.RotationX(-.2)
+    )
+
+    var world = base;
+
+
+
+    // draw
+
+    ctx.globalCompositeOperation = 'lighter'
+
+    function draw(hue){
+
+      faces.forEach(function(face){
+
+        var a = world.multiply(face.a)
+        var b = world.multiply(face.b)
+        var c = world.multiply(face.c)
+        var u = world.multiply(face.u)
+
+        var d = u.angleFrom($V([0,1,0])) / (Math.PI * 2)
+
+        ctx.fillStyle = "hsla("+hue+",90%,"+ d*100 +"%, .6)"
+
+        ctx.beginPath()
+
+        ctx.moveTo(a.e(1),a.e(2))
+        ctx.lineTo(b.e(1),b.e(2))
+        ctx.lineTo(c.e(1),c.e(2))
+
+        ctx.fill()
+
+      })
+    }
+
+    draw()
+
+    function render(t) {
+        requestAnimationFrame(render)
+
+        // world = base.multiply(
+        //   Matrix.RotationX(t/1000)
+        // )
+
+        world = base.multiply(
+          Matrix.RotationZ(t/9000)
+        )
+
+        clear()
+        draw(0) //Math.floor((t/10) % 360))
+        // console.log(Math.floor((t/5) % 360))
+
+    }
+
+    requestAnimationFrame(render)
+
+
+    </script>
+  </body>
+</html>
